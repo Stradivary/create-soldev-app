@@ -1,7 +1,7 @@
 {
   "name": "create-soldev-app",
   "description": "Codebase generator for Telkomsel",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Stradivary",
   "bin": {
     "create-soldev-app": "./bin/run.js"
@@ -37,7 +37,7 @@
   },
   "files": [
     "/bin",
-    "/dist",
+    "/dist/**/*",
     "/oclif.manifest.json",
     "/templates/**/*"
   ],
@@ -65,7 +65,7 @@
     "lint": "eslint . --ext .ts",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
-    "prepack": "oclif manifest && oclif readme",
+    "prepack": "oclif manifest && npm run build",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
