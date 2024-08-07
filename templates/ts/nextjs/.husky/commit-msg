@@ -1,0 +1,34 @@
+# npx --no -- commitlint --edit $1
+
+echo "→ Checking commit message ...."
+# Define regex patterns and error messages
+TICKET_REGEX='\[[A-Za-z0-9]+-[0-9]+\]'
+# DEVELOPER_REGEX='[A-Za-z]+\s(\+[A-Za-z]+\s)?'
+MESSAGE_REGEX='\s[A-Za-z0-9].*'
+
+ERROR_MESSAGE_TICKET="✘  Error: Commit message does not match TICKET pattern."
+# ERROR_MESSAGE_DEVELOPER="✘  Error: Commit message does not match DEVELOPER pattern."
+ERROR_MESSAGE_COMMIT="✘  Error: Commit message does not match MESSAGE pattern."
+
+# Read the commit message from the file
+
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# Function to check if a string matches a regex pattern
+
+check_pattern() {
+regex_pattern="$1"
+error_message="$2"
+
+if ! echo "$commit_msg" | grep -Eq "$regex_pattern"; then
+echo "$error_message" >&2
+echo "⒤  Commit message format: [<tiket_number>]<space>message"
+exit 1
+fi
+}
+
+# Check each pattern and provide appropriate error messages
+check_pattern "$TICKET_REGEX" "$ERROR_MESSAGE_TICKET"
+check_pattern "$DEVELOPER_REGEX" "$ERROR_MESSAGE_DEVELOPER"
+check_pattern "$MESSAGE_REGEX" "$ERROR_MESSAGE_COMMIT"

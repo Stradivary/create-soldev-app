@@ -1,0 +1,17 @@
+echo "→ Running Test...."
+
+if npm test; then
+  echo "✔ Test passed successfully"
+else
+  echo "✘  Test failed. Please fix the issues before committing."
+  exit 1  # Exit with failure status
+fi
+
+echo "→ Running Lint...."
+
+if npx lint-staged; then
+  echo "✔ Linting passed successfully"
+else
+  echo "✘  Linting failed. Please fix the issues before committing."
+  exit 1  # Exit with failure status
+fi
