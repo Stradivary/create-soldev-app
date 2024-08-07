@@ -1,5 +1,6 @@
-#!/usr/bin/env -S node --import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("ts-node/esm", pathToFileURL("./"));'
-// eslint-disable-next-line n/shebang
-import {execute} from '@oclif/core'
-
-await execute({development: true, dir: import.meta.url})
+#!/usr/bin/env node_modules/.bin/ts-node
+// eslint-disable-next-line n/shebang, unicorn/prefer-top-level-await, 
+;(async () => {
+  const oclif = await import('@oclif/core')
+  await oclif.execute({development: true, dir: __dirname})
+})()

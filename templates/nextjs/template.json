@@ -1,0 +1,10 @@
+{
+  "name": "NextJs 14",
+  "description": "Next.js Codebase for SolDev",
+  "version": "0.1.0",
+  "author": "Telkomsel Zaki",
+  "disabled": false,
+  "stacks": [
+    "nextjs"
+  ]
+}

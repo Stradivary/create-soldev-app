@@ -1,0 +1,10 @@
+{
+  "name": "Angular 18",
+  "description": "Angular Codebase for SolDev",
+  "version": "0.1.0",
+  "author": "Telkomsel Zaki",
+  "disabled": true,
+  "stacks": [
+    "Angular"
+  ]
+}
