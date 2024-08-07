@@ -1,7 +1,9 @@
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from '@oclif/core';
+import { execa } from 'execa-cjs';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
+import ora from 'ora';
 
 interface TemplateInfo {
   author: string;
@@ -49,10 +51,13 @@ Creating a new Soldev app in ./my-new-app
       message: 'What framework do you want to use?',
     });
 
-    const useTypeScript = await confirm({
-      default: true,
-      message: 'Do you want to use TypeScript?',
-    });
+    // const useTypeScript = await confirm({
+    //   default: true,
+    //   message: 'Do you want to use TypeScript?',
+    // });
+
+    const useTypeScript = true; // TypeScript is the only option for now
+
 
     const runPackageInstallation = await confirm({
       default: true,
@@ -98,29 +103,30 @@ Creating a new Soldev app in ./my-new-app
         }
       }
 
-      if (runPackageInstallation) {
-        this.log('Installing packages...');
-        try {
-          const { execa } = await import('execa');
-          await execa('npm', ['install'], { cwd: projectPath });
-          this.log('Packages installed successfully');
-        } catch (error) {
-          this.error(`Failed to install packages: ${error}`);
-        }
-      } else {
-        this.log('Package installation skipped');
+     
+    if (runPackageInstallation) {
+      const spinner = ora('Installing packages...').start();
+      try {
+        await execa('npm', ['install'], { cwd: projectPath });
+        spinner.succeed('Packages installed successfully');
+      } catch (error) {
+        spinner.fail(`Failed to install packages: ${error}`);
+        this.error(`Failed to install packages: ${error}`);
       }
+    } else {
+      this.log('Package installation skipped');
+    }
 
-      if (initializeGit) {
-        this.log('Initializing Git repository...');
-        try {
-          const { execa } = await import('execa');
-          await execa('git', ['init'], { cwd: projectPath });
-          this.log('Git repository initialized successfully');
-        } catch (error) {
-          this.error(`Failed to initialize Git repository: ${error}`);
-        }
+    if (initializeGit) {
+      const spinner = ora('Initializing Git repository...').start();
+      try {
+        await execa('git', ['init'], { cwd: projectPath });
+        spinner.succeed('Git repository initialized successfully');
+      } catch (error) {
+        spinner.fail(`Failed to initialize Git repository: ${error}`);
+        this.error(`Failed to initialize Git repository: ${error}`);
       }
+    }
 
       this.log('Done! 🎉');
       this.log('To get started, run:');
