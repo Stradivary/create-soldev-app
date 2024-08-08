@@ -1,10 +1,9 @@
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from '@oclif/core';
 import { execa } from 'execa-cjs';
+import { createSpinner } from 'nanospinner';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
-import ora from 'ora';
-
 interface TemplateInfo {
   author: string;
   disabled: boolean;
@@ -21,7 +20,8 @@ interface FrameworkChoice {
 }
 
 class CreateSoldevApp extends Command {
-  static description = 'Create a new Soldev app interactively';
+
+  static description = 'Create a new Telkomsel Codebase project with Soldev CLI, the template-based project generator is designed to help you quickly scaffold a new project with the right tools and settings.';
 
   static examples = [
     `$ <%= config.bin %>
@@ -32,6 +32,8 @@ class CreateSoldevApp extends Command {
 Creating a new Soldev app in ./my-new-app
 `,
   ];
+
+  static summary = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
   async run(): Promise<void> {
     const projectName = await input({
@@ -103,30 +105,39 @@ Creating a new Soldev app in ./my-new-app
         }
       }
 
-     
-    if (runPackageInstallation) {
-      const spinner = ora('Installing packages...').start();
-      try {
-        await execa('npm', ['install'], { cwd: projectPath });
-        spinner.succeed('Packages installed successfully');
-      } catch (error) {
-        spinner.fail(`Failed to install packages: ${error}`);
-        this.error(`Failed to install packages: ${error}`);
-      }
-    } else {
-      this.log('Package installation skipped');
-    }
 
-    if (initializeGit) {
-      const spinner = ora('Initializing Git repository...').start();
-      try {
-        await execa('git', ['init'], { cwd: projectPath });
-        spinner.succeed('Git repository initialized successfully');
-      } catch (error) {
-        spinner.fail(`Failed to initialize Git repository: ${error}`);
-        this.error(`Failed to initialize Git repository: ${error}`);
+      if (runPackageInstallation) {
+        const spinner = createSpinner('Installing packages...').start();
+        try {
+          await execa('npm', ['install'], { cwd: projectPath });
+          spinner.success({
+            text: 'Packages installed successfully'
+          }
+          );
+        } catch (error) {
+          spinner.error({
+            text: `Failed to install packages: ${error}`
+          });
+          this.error(`Failed to install packages: ${error}`);
+        }
+      } else {
+        this.log('Package installation skipped');
       }
-    }
+
+      if (initializeGit) {
+        const spinner = createSpinner('Initializing Git repository...').start();
+        try {
+          await execa('git', ['init'], { cwd: projectPath });
+          spinner.success({
+            text: 'Git repository initialized successfully'
+          })
+        } catch (error) {
+          spinner.error({
+            text: `Failed to initialize Git repository: ${error}`
+          });
+          this.error(`Failed to initialize Git repository: ${error}`);
+        }
+      }
 
       this.log('Done! 🎉');
       this.log('To get started, run:');
