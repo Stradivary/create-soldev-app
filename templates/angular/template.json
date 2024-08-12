@@ -4,10 +4,10 @@
   "description": "Angular Codebase for SolDev",
   "version": "0.1.0",
   "author": "Telkomsel Zaki",
-  "disabled": true,
+  "disabled": false,
   "stacks": [
     "Angular"
   ],
   "mode": "degit",
-  "source": "https://github.com/Stradivary/angular-boilerplate.git"
+  "source": "https://github.com/Stradivary/angular-boilerplate-soldev.git"
 }

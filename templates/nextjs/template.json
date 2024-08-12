@@ -9,5 +9,5 @@
     "nextjs"
   ],
   "mode": "copy",
-  "source": "./source"
+  "source": "nextjs/source"
 }

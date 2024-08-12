@@ -26,6 +26,10 @@ class CreateSoldevApp extends Command {
       description: 'Initialize git repository',
       default: false,
     }),
+    remote: Flags.string({
+      char: 'r',
+      description: 'remote repository to add as origin'
+    })
   };
 
   async run(): Promise<void> {
@@ -98,7 +102,7 @@ class CreateSoldevApp extends Command {
   private async createProject(template: TemplateInfo, projectPath: string): Promise<void> {
     switch (template.mode) {
       case 'copy':
-        await this.copyTemplate(template.source!, projectPath);
+        await this.copyTemplate(path.join(path.dirname(__dirname), 'templates', template.source!), projectPath);
         break;
       case 'degit':
         await this.cloneWithDegit(template.source!, projectPath);
@@ -123,7 +127,7 @@ class CreateSoldevApp extends Command {
   private async cloneWithDegit(repoUrl: string, destPath: string): Promise<void> {
     const spinner = createSpinner(`Cloning template from ${repoUrl}...`).start();
     try {
-      await execa('npx', ['degit', repoUrl, destPath]);
+      await execa('npx', ['tiged', '--mode=git', repoUrl, destPath]);
       spinner.success({ text: 'Template cloned successfully' });
     } catch (error) {
       spinner.error({ text: `Failed to clone template: ${error}` });
@@ -172,6 +176,7 @@ class CreateSoldevApp extends Command {
       await execa('git', ['init'], { cwd: projectPath });
       await execa('git', ['add', '.'], { cwd: projectPath });
       await execa('git', ['commit', '-m', 'Initial commit'], { cwd: projectPath });
+
       spinner.success({ text: 'Git repository initialized successfully' });
     } catch (error) {
       spinner.error({ text: `Failed to initialize Git repository: ${error}` });
