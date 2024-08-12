@@ -1,155 +1,192 @@
 import { confirm, input, select } from '@inquirer/prompts';
-import { Command } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
 import { execa } from 'execa-cjs';
 import { createSpinner } from 'nanospinner';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
+
 interface TemplateInfo {
+  id: string;
   author: string;
   disabled: boolean;
   name: string;
   stacks: string[];
-  value: string;
   version: string;
-}
-
-interface FrameworkChoice {
-  disabled?: boolean;
-  name: string;
-  value: string;
+  mode: 'copy' | 'degit' | 'script';
+  source?: string;
 }
 
 class CreateSoldevApp extends Command {
-
-  static description = 'Create a new Telkomsel Codebase project with Soldev CLI, the template-based project generator is designed to help you quickly scaffold a new project with the right tools and settings.';
-
-  static examples = [
-    `$ <%= config.bin %>
-? What is the name of your project? my-new-app
-? What framework do you want to use? Next.js 14
-? Do you want to use TypeScript? Yes
-? Do you want to run package installation? Yes
-Creating a new Soldev app in ./my-new-app
-`,
-  ];
-
+  static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
   static summary = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
-  async run(): Promise<void> {
-    const projectName = await input({
-      message: 'What is the name of your project?',
-      validate: (value: string) => value.trim() !== '' || 'Project name cannot be empty',
-    });
+  static flags = {
+    init: Flags.boolean({
+      char: 'i',
+      description: 'Initialize git repository',
+      default: false,
+    }),
+  };
 
+  async run(): Promise<void> {
+    const { flags } = await this.parse(CreateSoldevApp);
+
+    const projectName = await this.getProjectName();
     const templatePath = path.join(path.dirname(__dirname), 'templates');
     const availableFrameworks = this.getTemplates(templatePath);
-
-    if (availableFrameworks.length === 0) {
-      this.error('No templates found. Please check your templates directory.');
-    }
-
-    const frameworkChoice = await select({
-      choices: availableFrameworks,
-      message: 'What framework do you want to use?',
-    });
-
-    // const useTypeScript = await confirm({
-    //   default: true,
-    //   message: 'Do you want to use TypeScript?',
-    // });
-
-    const useTypeScript = true; // TypeScript is the only option for now
-
-
-    const runPackageInstallation = await confirm({
-      default: true,
-      message: 'Do you want to run package installation?',
-    });
-
-    const initializeGit = await confirm({
-      default: true,
-      message: 'Do you want to initialize a Git repository?',
-    });
+    const frameworkChoice = await this.selectFramework(availableFrameworks);
+    const runPackageInstallation = await this.confirmPackageInstallation();
 
     const projectPath = path.join(process.cwd(), projectName);
-    let selectedTemplatePath = path.join(templatePath, frameworkChoice);
+    const selectedTemplate = availableFrameworks.find(t => t.id === frameworkChoice);
 
-    // Check if JavaScript version is requested and available
-    if (!useTypeScript) {
-      const jsTemplatePath = `${selectedTemplatePath}-js`;
-      if (existsSync(jsTemplatePath)) {
-        selectedTemplatePath = jsTemplatePath;
-      } else {
-        this.warn('JavaScript template not found. Using TypeScript template.');
-      }
-    }
-
-    if (!existsSync(selectedTemplatePath)) {
-      this.error(`Template not found: ${selectedTemplatePath}`);
+    if (!selectedTemplate) {
+      this.error('Selected template not found.');
+      return;
     }
 
     try {
-      // Copy template files
-      this.copyDirectory(selectedTemplatePath, projectPath);
-      this.log(`Created a new Soldev app in ${projectPath}`);
-
-      // Update package.json
-      const packageJsonPath = path.join(projectPath, 'package.json');
-      if (existsSync(packageJsonPath)) {
-        try {
-          const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-          packageJson.name = projectName;
-          writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-        } catch (error) {
-          this.error(`Failed to update package.json: ${error}`);
-        }
-      }
-
+      await this.createProject(selectedTemplate, projectPath);
+      await this.updatePackageJson(projectPath, projectName);
 
       if (runPackageInstallation) {
-        const spinner = createSpinner('Installing packages...').start();
-        try {
-          await execa('npm', ['install'], { cwd: projectPath });
-          spinner.success({
-            text: 'Packages installed successfully'
-          }
-          );
-        } catch (error) {
-          spinner.error({
-            text: `Failed to install packages: ${error}`
-          });
-          this.error(`Failed to install packages: ${error}`);
-        }
-      } else {
-        this.log('Package installation skipped');
+        await this.installPackages(projectPath);
       }
 
-      if (initializeGit) {
-        const spinner = createSpinner('Initializing Git repository...').start();
-        try {
-          await execa('git', ['init'], { cwd: projectPath });
-          spinner.success({
-            text: 'Git repository initialized successfully'
-          })
-        } catch (error) {
-          spinner.error({
-            text: `Failed to initialize Git repository: ${error}`
-          });
-          this.error(`Failed to initialize Git repository: ${error}`);
-        }
+      if (flags.init || await this.confirmGitInit()) {
+        await this.initializeGit(projectPath);
       }
 
-      this.log('Done! 🎉');
-      this.log('To get started, run:');
-      this.log(`  cd ${projectName}`);
-      if (!runPackageInstallation) {
-        this.log('  npm install');
-      }
-
-      this.log('  npm run dev');
+      this.displayFinalInstructions(projectName, runPackageInstallation);
     } catch (error) {
       this.error(`Failed to create the project: ${error}`);
     }
+  }
+
+  private async getProjectName(): Promise<string> {
+    return input({
+      message: 'What is the name of your project?',
+      validate: (value: string) => value.trim() !== '' || 'Project name cannot be empty',
+    });
+  }
+
+  private async selectFramework(availableFrameworks: TemplateInfo[]): Promise<string> {
+    return select({
+      choices: availableFrameworks.map(framework => ({
+        name: `${framework.name} (${framework.version})`,
+        value: framework.id,
+        disabled: framework.disabled
+      })),
+      message: 'What framework do you want to use?',
+    });
+  }
+
+  private async confirmPackageInstallation(): Promise<boolean> {
+    return confirm({
+      default: true,
+      message: 'Do you want to run package installation?',
+    });
+  }
+
+  private async confirmGitInit(): Promise<boolean> {
+    return confirm({
+      default: true,
+      message: 'Do you want to initialize a Git repository?',
+    });
+  }
+
+  private async createProject(template: TemplateInfo, projectPath: string): Promise<void> {
+    switch (template.mode) {
+      case 'copy':
+        await this.copyTemplate(template.source!, projectPath);
+        break;
+      case 'degit':
+        await this.cloneWithDegit(template.source!, projectPath);
+        break;
+      case 'script':
+        await this.runScript(template.source!, projectPath);
+        break;
+    }
+  }
+
+  private async copyTemplate(sourcePath: string, destPath: string): Promise<void> {
+    const spinner = createSpinner('Copying template files...').start();
+    try {
+      this.copyDirectory(sourcePath, destPath);
+      spinner.success({ text: 'Template files copied successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to copy template files: ${error}` });
+      throw error;
+    }
+  }
+
+  private async cloneWithDegit(repoUrl: string, destPath: string): Promise<void> {
+    const spinner = createSpinner(`Cloning template from ${repoUrl}...`).start();
+    try {
+      await execa('npx', ['degit', repoUrl, destPath]);
+      spinner.success({ text: 'Template cloned successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to clone template: ${error}` });
+      throw error;
+    }
+  }
+
+  private async runScript(script: string, destPath: string): Promise<void> {
+    const spinner = createSpinner(`Running script: ${script}...`).start();
+    try {
+      await execa(script, [destPath]);
+      spinner.success({ text: 'Script executed successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to run script: ${error}` });
+      throw error;
+    }
+  }
+
+  private async updatePackageJson(projectPath: string, projectName: string): Promise<void> {
+    const packageJsonPath = path.join(projectPath, 'package.json');
+    if (existsSync(packageJsonPath)) {
+      try {
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+        packageJson.name = projectName;
+        writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+      } catch (error) {
+        this.error(`Failed to update package.json: ${error}`);
+      }
+    }
+  }
+
+  private async installPackages(projectPath: string): Promise<void> {
+    const spinner = createSpinner('Installing packages...').start();
+    try {
+      await execa('npm', ['install'], { cwd: projectPath });
+      spinner.success({ text: 'Packages installed successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to install packages: ${error}` });
+      throw error;
+    }
+  }
+
+  private async initializeGit(projectPath: string): Promise<void> {
+    const spinner = createSpinner('Initializing Git repository...').start();
+    try {
+      await execa('git', ['init'], { cwd: projectPath });
+      await execa('git', ['add', '.'], { cwd: projectPath });
+      await execa('git', ['commit', '-m', 'Initial commit'], { cwd: projectPath });
+      spinner.success({ text: 'Git repository initialized successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to initialize Git repository: ${error}` });
+      throw error;
+    }
+  }
+
+  private displayFinalInstructions(projectName: string, packagesInstalled: boolean): void {
+    this.log('Done! 🎉');
+    this.log('To get started, run:');
+    this.log(`  cd ${projectName}`);
+    if (!packagesInstalled) {
+      this.log('  npm install');
+    }
+    this.log('  npm run dev');
   }
 
   private copyDirectory(src: string, dest: string) {
@@ -168,24 +205,18 @@ Creating a new Soldev app in ./my-new-app
     }
   }
 
-  private getTemplates(templatePath: string): FrameworkChoice[] {
-    const templates: FrameworkChoice[] = [];
+  private getTemplates(templatePath: string): TemplateInfo[] {
+    const templates: TemplateInfo[] = [];
     const folders = readdirSync(templatePath, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
 
     for (const folder of folders) {
-      if (folder.endsWith('-js')) continue; // Skip JS folders, they'll be handled with their TS counterparts
-
       const templateJsonPath = path.join(templatePath, folder, 'template.json');
       if (existsSync(templateJsonPath)) {
         try {
           const templateInfo: TemplateInfo = JSON.parse(readFileSync(templateJsonPath, 'utf8'));
-          templates.push({
-            disabled: templateInfo.disabled,
-            name: `${templateInfo.name} (${templateInfo.version})`,
-            value: folder
-          });
+          templates.push(templateInfo);
         } catch (error) {
           this.warn(`Error reading template.json for ${folder}: ${error}`);
         }
