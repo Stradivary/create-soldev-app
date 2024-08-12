@@ -1,4 +1,5 @@
 {
+  "id": "nx-14",
   "name": "NextJs 14",
   "description": "Next.js Codebase for SolDev",
   "version": "0.1.0",
@@ -6,5 +7,7 @@
   "disabled": false,
   "stacks": [
     "nextjs"
-  ]
+  ],
+  "mode": "copy",
+  "source": "./source"
 }
