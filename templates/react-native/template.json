@@ -5,10 +5,10 @@
     "description": "React Native Codebase for SolDev",
     "version": "0.1.0",
     "author": "Telkomsel Zaki",
-    "disabled": true,
+    "disabled": false,
     "stacks": [
         "React Native"
     ],
     "mode": "script",
-    "source": "./init.sh"
+    "source": "./react-native/init.sh"
 }

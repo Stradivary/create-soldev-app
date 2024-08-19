@@ -46,11 +46,10 @@ class CreateSoldevApp extends Command {
 
     if (!selectedTemplate) {
       this.error('Selected template not found.');
-      return;
     }
 
     try {
-      await this.createProject(selectedTemplate, projectPath);
+      await this.createProject(selectedTemplate, projectPath, projectName);
       await this.updatePackageJson(projectPath, projectName);
 
       if (runPackageInstallation) {
@@ -99,16 +98,17 @@ class CreateSoldevApp extends Command {
     });
   }
 
-  private async createProject(template: TemplateInfo, projectPath: string): Promise<void> {
+  private async createProject(template: TemplateInfo, projectPath: string, projectName: string): Promise<void> {
+    const templatePath = path.join(path.dirname(__dirname), 'templates', template.source!)
     switch (template.mode) {
       case 'copy':
         await this.copyTemplate(path.join(path.dirname(__dirname), 'templates', template.source!), projectPath);
         break;
       case 'degit':
-        await this.cloneWithDegit(template.source!, projectPath);
+        await this.cloneWithDegit(template.source!, projectPath, projectName);
         break;
       case 'script':
-        await this.runScript(template.source!, projectPath);
+        await this.runScriptTemplate(template.source!, projectPath, projectName);
         break;
     }
   }
@@ -124,7 +124,7 @@ class CreateSoldevApp extends Command {
     }
   }
 
-  private async cloneWithDegit(repoUrl: string, destPath: string): Promise<void> {
+  private async cloneWithDegit(repoUrl: string, destPath: string, appName: string): Promise<void> {
     const spinner = createSpinner(`Cloning template from ${repoUrl}...`).start();
     try {
       await execa('npx', ['tiged', '--mode=git', repoUrl, destPath]);
@@ -135,10 +135,21 @@ class CreateSoldevApp extends Command {
     }
   }
 
-  private async runScript(script: string, destPath: string): Promise<void> {
-    const spinner = createSpinner(`Running script: ${script}...`).start();
+  private async runScriptTemplate(scriptPath: string, destPath: string, appName: string): Promise<void> {
+    const fullScriptPath = path.join(path.dirname(__dirname), 'templates', scriptPath);
+    const spinner = createSpinner(`Running script: ${scriptPath}...`).start();
     try {
-      await execa(script, [destPath]);
+      if (!existsSync(fullScriptPath)) {
+        throw new Error(`Script file not found: ${fullScriptPath}`);
+      }
+
+      await execa('chmod', ['+x', fullScriptPath]);
+
+      await execa(fullScriptPath, [destPath, appName], {
+        stdio: 'inherit',
+        shell: true,
+      });
+
       spinner.success({ text: 'Script executed successfully' });
     } catch (error) {
       spinner.error({ text: `Failed to run script: ${error}` });

@@ -1,11 +1,9 @@
 {
   "name": "create-soldev-app",
   "description": "Codebase generator for Telkomsel",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": "Stradivary",
-  "bin": {
-    "create-soldev-app": "./bin/run.js"
-  },
+  "bin": "./bin/run.js",
   "bugs": "https://github.com/Stradivary/create-soldev-app/issues",
   "dependencies": {
     "@inquirer/prompts": "^5.3.8",
@@ -70,5 +68,5 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
-  "types": "dist/index.d.ts"
+  "types": "dist/index.d.ts",
 }
