@@ -1,7 +1,7 @@
 {
   "name": "create-soldev-app",
   "description": "Codebase generator for Telkomsel",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": "Stradivary",
   "bin": "./bin/run.js",
   "bugs": "https://github.com/Stradivary/create-soldev-app/issues",
