@@ -12,7 +12,7 @@ interface TemplateInfo {
   name: string;
   stacks: string[];
   version: string;
-  mode: 'copy' | 'degit' | 'script';
+  mode: 'copy' | 'git' | 'degit' | 'script';
   source?: string;
 }
 
@@ -102,8 +102,9 @@ class CreateSoldevApp extends Command {
     const templatePath = path.join(path.dirname(__dirname), 'templates', template.source!)
     switch (template.mode) {
       case 'copy':
-        await this.copyTemplate(path.join(path.dirname(__dirname), 'templates', template.source!), projectPath);
+        await this.copyTemplate(templatePath, projectPath);
         break;
+      case 'git':
       case 'degit':
         await this.cloneWithDegit(template.source!, projectPath, projectName);
         break;
@@ -188,7 +189,7 @@ class CreateSoldevApp extends Command {
       await execa('git', ['add', '.'], { cwd: projectPath });
       await execa('git', ['commit', '-m', 'Initial commit'], { cwd: projectPath });
 
-      spinner.success({ text: 'Git repository initialized successfully' });
+      spinner.success({ text: 'Git repository initialized successfully\nTo begin push, add remote repository' });
     } catch (error) {
       spinner.error({ text: `Failed to initialize Git repository: ${error}` });
       throw error;
