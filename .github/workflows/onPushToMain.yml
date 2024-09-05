@@ -1,5 +1,5 @@
 # test
-name: version, tag and github release
+name: 1. version, tag and github release
 
 on:
   push:
