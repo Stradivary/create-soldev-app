@@ -1,9 +1,12 @@
 import { select } from '@inquirer/prompts';
 import { Command } from '@oclif/core';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 import { TemplateInfo } from '../libs/TemplateInfo.js';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default class List extends Command {
 
@@ -41,17 +44,17 @@ export default class List extends Command {
 
     private async listVersions() {
 
-        const templatePath = path.join('./', 'templates');
+        const templatePath = path.join(path.dirname(realpathSync(__dirname)),'..', 'templates');
         const availableFrameworks = this.getTemplates(templatePath);
+        this.log('listing template versions from repository:')
+        availableFrameworks.map(framework => ({
+            disabled: framework.disabled,
+            name: `(${framework.version}) (${framework.id}) - ${framework.name}`,
+            value: framework.id
+        })).forEach( (e)=> 
+            this.log(e.name)
 
-        await select({
-            choices: availableFrameworks.map(framework => ({
-                disabled: framework.disabled,
-                name: `(${framework.version}) ({framework.id}) - ${framework.name}`,
-                value: framework.id
-            })),
-            message: 'ℹ️ listing template versions from repository [alpha]',
-        });
+        ) 
     }
 
 }

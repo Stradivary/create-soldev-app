@@ -1,22 +1,25 @@
 import { confirm, input, select } from '@inquirer/prompts';
 import { Args, Command, Flags } from '@oclif/core';
-import { execa } from 'execa-cjs';
+import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
+
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { TemplateInfo } from '../libs/TemplateInfo.js';
 
 class CreateSoldevApp extends Command {
   static override args = {
-    directory: Args.string({ default: '.', description: 'directory to create the project in', required: false }),
     name: Args.string({ description: 'Name of the project', required: false }),
   };
 
   static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
   static override flags = {
-    framework: Flags.string({ char: 'f', description: 'Framework to use'}),
+    framework: Flags.string({ char: 'f', description: 'Framework to use (example: nodejs)', options: ['nextjs', 'nextjs@0.2.0'] }),
     interactive: Flags.boolean({ char: 'i', default: false, description: "interactive mode" }),
     npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
     version: Flags.string({ char: 'v', description: 'Version of the template' }),
@@ -29,7 +32,7 @@ class CreateSoldevApp extends Command {
     let frameworkChoice: string;
     let runPackageInstallation: boolean;
 
-    const templatePath = path.join('./', 'templates');
+    const templatePath = path.join(path.dirname(realpathSync(__dirname)), '..', 'templates');
     const availableFrameworks = this.getTemplates(templatePath);
 
     if (flags.interactive) {
@@ -41,7 +44,7 @@ class CreateSoldevApp extends Command {
         this.error('Project name is required in non-interactive mode.');
       }
 
-      if (!(flags.framework )) {
+      if (!(flags.framework)) {
         this.error('Framework is required in non-interactive mode. Use --framework or -f flag.');
       }
 
@@ -113,7 +116,7 @@ class CreateSoldevApp extends Command {
   }
 
   private async createProject(template: TemplateInfo, projectPath: string): Promise<void> {
-    const templatePath = path.join('./templates', template.source!)
+    const templatePath = path.join(path.dirname(realpathSync(__dirname)), '..', 'templates', template.source!)
     await this.copyTemplate(templatePath, projectPath);
   }
 

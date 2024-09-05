@@ -1,0 +1,13 @@
+{
+  "id": "nextjs@0.2.0",
+  "name": "NextJs 14",
+  "description": "Next.js Codebase for SolDev",
+  "version": "0.2.0",
+  "author": "Telkomsel Zaki",
+  "disabled": false,
+  "stacks": [
+    "nextjs"
+  ],
+  "mode": "copy",
+  "source": "nextjs/source"
+}
