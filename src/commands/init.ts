@@ -4,21 +4,21 @@ import { execa } from 'execa-cjs';
 import { createSpinner } from 'nanospinner';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
+
 import { TemplateInfo } from '../libs/TemplateInfo.js';
 
 class CreateSoldevApp extends Command {
   static override args = {
-    name: Args.string({ description: 'Name of the project', required: false }),
     directory: Args.string({ default: '.', description: 'directory to create the project in', required: false }),
+    name: Args.string({ description: 'Name of the project', required: false }),
   };
 
   static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
-  static override flags = { 
-    interactive: Flags.boolean({ char: 'i', description: "interactive mode", default: false }),
-    git: Flags.boolean({ char: 'g', description: 'Initialize a git repository' }),
-    npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
+  static override flags = {
     framework: Flags.string({ char: 'f', description: 'Framework to use'}),
+    interactive: Flags.boolean({ char: 'i', default: false, description: "interactive mode" }),
+    npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
     version: Flags.string({ char: 'v', description: 'Version of the template' }),
   };
 
@@ -28,7 +28,6 @@ class CreateSoldevApp extends Command {
     let projectName: string;
     let frameworkChoice: string;
     let runPackageInstallation: boolean;
-    let initGit: boolean;
 
     const templatePath = path.join('./', 'templates');
     const availableFrameworks = this.getTemplates(templatePath);
@@ -37,18 +36,18 @@ class CreateSoldevApp extends Command {
       projectName = args.name || await this.getProjectName();
       frameworkChoice = flags.framework || await this.selectFramework(availableFrameworks);
       runPackageInstallation = flags.npm || await this.confirmPackageInstallation();
-      initGit = flags.git || await this.confirmGitInit();
     } else {
       if (!args.name) {
         this.error('Project name is required in non-interactive mode.');
       }
+
       if (!(flags.framework )) {
         this.error('Framework is required in non-interactive mode. Use --framework or -f flag.');
       }
+
       projectName = args.name;
       frameworkChoice = flags.framework;
       runPackageInstallation = flags.npm ?? false;
-      initGit = flags.git ?? false;
     }
 
     const projectPath = path.join(process.cwd(), projectName);
@@ -59,47 +58,17 @@ class CreateSoldevApp extends Command {
     }
 
     try {
-      await this.createProject(selectedTemplate, projectPath, projectName);
+      await this.createProject(selectedTemplate, projectPath);
       await this.updatePackageJson(projectPath, projectName);
 
       if (runPackageInstallation) {
         await this.installPackages(projectPath);
       }
 
-      if (initGit) {
-        await this.initializeGit(projectPath);
-      }
-
       this.displayFinalInstructions(projectName, runPackageInstallation);
     } catch (error) {
       this.error(`Failed to create the project: ${error}`);
     }
-  }
-
-
-  private async getProjectName(): Promise<string> {
-    return input({
-      message: 'What is the name of your project?',
-      validate: (value: string) => value.trim() !== '' || 'Project name cannot be empty',
-    });
-  }
-
-  private async selectFramework(availableFrameworks: TemplateInfo[]): Promise<string> {
-    return select({
-      choices: availableFrameworks.map(framework => ({
-        name: `${framework.name} (${framework.version})`,
-        value: framework.id,
-        disabled: framework.disabled
-      })),
-      message: 'What framework do you want to use?',
-    });
-  }
-
-  private async confirmPackageInstallation(): Promise<boolean> {
-    return confirm({
-      default: true,
-      message: 'Do you want to run package installation?',
-    });
   }
 
   private async confirmGitInit(): Promise<boolean> {
@@ -109,111 +78,11 @@ class CreateSoldevApp extends Command {
     });
   }
 
-  private async createProject(template: TemplateInfo, projectPath: string, projectName: string): Promise<void> {
-    const templatePath = path.join('./templates', template.source!)
-    switch (template.mode) {
-      case 'copy':
-        await this.copyTemplate(templatePath, projectPath);
-        break;
-      case 'degit':
-        await this.cloneWithDegit(template.source!, projectPath, projectName);
-        break;
-      case 'script':
-        await this.runScriptTemplate(template.source!, projectPath, projectName);
-        break;
-    }
-  }
-
-  private async copyTemplate(sourcePath: string, destPath: string): Promise<void> {
-    const spinner = createSpinner('Copying template files...').start();
-    try {
-      this.copyDirectory(sourcePath, destPath);
-      spinner.success({ text: 'Template files copied successfully' });
-    } catch (error) {
-      spinner.error({ text: `Failed to copy template files: ${error}` });
-      throw error;
-    }
-  }
-
-  private async cloneWithDegit(repoUrl: string, destPath: string, appName: string): Promise<void> {
-    const spinner = createSpinner(`Cloning template from ${repoUrl}...`).start();
-    try {
-      await execa('npx', ['tiged', '--mode=git', repoUrl, destPath]);
-      spinner.success({ text: 'Template cloned successfully' });
-    } catch (error) {
-      spinner.error({ text: `Failed to clone template: ${error}` });
-      throw error;
-    }
-  }
-
-  private async runScriptTemplate(scriptPath: string, destPath: string, appName: string): Promise<void> {
-    const fullScriptPath = path.join('./templates', scriptPath);
-    const spinner = createSpinner(`Running script: ${scriptPath}...`).start();
-    try {
-      if (!existsSync(fullScriptPath)) {
-        throw new Error(`Script file not found: ${fullScriptPath}`);
-      }
-
-      await execa('chmod', ['+x', fullScriptPath]);
-
-      await execa(fullScriptPath, [destPath, appName], {
-        stdio: 'inherit',
-        shell: true,
-      });
-
-      spinner.success({ text: 'Script executed successfully' });
-    } catch (error) {
-      spinner.error({ text: `Failed to run script: ${error}` });
-      throw error;
-    }
-  }
-
-  private async updatePackageJson(projectPath: string, projectName: string): Promise<void> {
-    const packageJsonPath = path.join(projectPath, 'package.json');
-    if (existsSync(packageJsonPath)) {
-      try {
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-        packageJson.name = projectName;
-        writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-      } catch (error) {
-        this.error(`Failed to update package.json: ${error}`);
-      }
-    }
-  }
-
-  private async installPackages(projectPath: string): Promise<void> {
-    const spinner = createSpinner('Installing packages...').start();
-    try {
-      await execa('npm', ['install'], { cwd: projectPath });
-      spinner.success({ text: 'Packages installed successfully' });
-    } catch (error) {
-      spinner.error({ text: `Failed to install packages: ${error}` });
-      throw error;
-    }
-  }
-
-  private async initializeGit(projectPath: string): Promise<void> {
-    const spinner = createSpinner('Initializing Git repository...').start();
-    try {
-      await execa('git', ['init'], { cwd: projectPath });
-      await execa('git', ['add', '.'], { cwd: projectPath });
-      await execa('git', ['commit', '-m', 'Initial commit'], { cwd: projectPath });
-
-      spinner.success({ text: 'Git repository initialized successfully\nTo begin push, add remote repository' });
-    } catch (error) {
-      spinner.error({ text: `Failed to initialize Git repository: ${error}` });
-      throw error;
-    }
-  }
-
-  private displayFinalInstructions(projectName: string, packagesInstalled: boolean): void {
-    this.log('Done! 🎉');
-    this.log('To get started, run:');
-    this.log(`  cd ${projectName}`);
-    if (!packagesInstalled) {
-      this.log('  npm install');
-    }
-    this.log('  npm run dev');
+  private async confirmPackageInstallation(): Promise<boolean> {
+    return confirm({
+      default: true,
+      message: 'Do you want to run package installation?',
+    });
   }
 
   private copyDirectory(src: string, dest: string) {
@@ -230,6 +99,40 @@ class CreateSoldevApp extends Command {
         copyFileSync(srcPath, destPath);
       }
     }
+  }
+
+  private async copyTemplate(sourcePath: string, destPath: string): Promise<void> {
+    const spinner = createSpinner('Copying template files...').start();
+    try {
+      this.copyDirectory(sourcePath, destPath);
+      spinner.success({ text: 'Template files copied successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to copy template files: ${error}` });
+      throw error;
+    }
+  }
+
+  private async createProject(template: TemplateInfo, projectPath: string): Promise<void> {
+    const templatePath = path.join('./templates', template.source!)
+    await this.copyTemplate(templatePath, projectPath);
+  }
+
+  private displayFinalInstructions(projectName: string, packagesInstalled: boolean): void {
+    this.log('Done! 🎉');
+    this.log('To get started, run:');
+    this.log(`  cd ${projectName}`);
+    if (!packagesInstalled) {
+      this.log('  npm install');
+    }
+
+    this.log('  npm run dev');
+  }
+
+  private async getProjectName(): Promise<string> {
+    return input({
+      message: 'What is the name of your project?',
+      validate: (value: string) => value.trim() !== '' || 'Project name cannot be empty',
+    });
   }
 
   private getTemplates(templatePath: string): TemplateInfo[] {
@@ -251,6 +154,55 @@ class CreateSoldevApp extends Command {
     }
 
     return templates;
+  }
+
+  // private async initializeGit(projectPath: string): Promise<void> {
+  //   const spinner = createSpinner('Initializing Git repository...').start();
+  //   try {
+  //     await execa('git', ['init'], { cwd: projectPath });
+  //     await execa('git', ['add', '.'], { cwd: projectPath });
+  //     await execa('git', ['commit', '-m', 'Initial commit'], { cwd: projectPath });
+
+  //     spinner.success({ text: 'Git repository initialized successfully\nTo begin push, add remote repository' });
+  //   } catch (error) {
+  //     spinner.error({ text: `Failed to initialize Git repository: ${error}` });
+  //     throw error;
+  //   }
+  // }
+
+  private async installPackages(projectPath: string): Promise<void> {
+    const spinner = createSpinner('Installing packages...').start();
+    try {
+      await execa('npm', ['install'], { cwd: projectPath });
+      spinner.success({ text: 'Packages installed successfully' });
+    } catch (error) {
+      spinner.error({ text: `Failed to install packages: ${error}` });
+      throw error;
+    }
+  }
+
+  private async selectFramework(availableFrameworks: TemplateInfo[]): Promise<string> {
+    return select({
+      choices: availableFrameworks.map(framework => ({
+        disabled: framework.disabled,
+        name: `${framework.name} (${framework.version})`,
+        value: framework.id
+      })),
+      message: 'What framework do you want to use?',
+    });
+  }
+
+  private async updatePackageJson(projectPath: string, projectName: string): Promise<void> {
+    const packageJsonPath = path.join(projectPath, 'package.json');
+    if (existsSync(packageJsonPath)) {
+      try {
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+        packageJson.name = projectName;
+        writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+      } catch (error) {
+        this.error(`Failed to update package.json: ${error}`);
+      }
+    }
   }
 }
 

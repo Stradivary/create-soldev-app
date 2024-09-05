@@ -1,8 +1,9 @@
 import { select } from '@inquirer/prompts';
 import { Command } from '@oclif/core';
-import { TemplateInfo } from '../libs/TemplateInfo.js';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+
+import { TemplateInfo } from '../libs/TemplateInfo.js';
 
 export default class List extends Command {
 
@@ -15,9 +16,8 @@ export default class List extends Command {
     public async run(): Promise<void> {
 
         await this.listVersions();
-
-
     }
+
     private getTemplates(templatePath: string): TemplateInfo[] {
         const templates: TemplateInfo[] = [];
         const folders = readdirSync(templatePath, { withFileTypes: true })
@@ -38,6 +38,7 @@ export default class List extends Command {
 
         return templates;
     }
+
     private async listVersions() {
 
         const templatePath = path.join('./', 'templates');
@@ -45,9 +46,9 @@ export default class List extends Command {
 
         await select({
             choices: availableFrameworks.map(framework => ({
+                disabled: framework.disabled,
                 name: `(${framework.version}) ({framework.id}) - ${framework.name}`,
-                value: framework.id,
-                disabled: framework.disabled
+                value: framework.id
             })),
             message: 'ℹ️ listing template versions from repository [alpha]',
         });
