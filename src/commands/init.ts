@@ -4,45 +4,34 @@ import { execa } from 'execa-cjs';
 import { createSpinner } from 'nanospinner';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
-
-interface TemplateInfo {
-  id: string;
-  author: string;
-  disabled: boolean;
-  name: string;
-  stacks: string[];
-  version: string;
-  mode: 'copy' | 'degit' | 'script';
-  source?: string;
-}
+import { TemplateInfo } from '../libs/TemplateInfo.js';
 
 class CreateSoldevApp extends Command {
   static override args = {
-    directory: Args.string({ default: '.', description: 'directory to create the project in' }),
+    name: Args.string({ description: 'Name of the project', required: false }),
+    directory: Args.string({ default: '.', description: 'directory to create the project in', required: false }),
   };
 
   static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
-  static summary = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
   static override flags = {
     force: Flags.boolean({ char: 'f' }),
-    interactive: Flags.boolean({ char: 'i', description: "interactive mode", default: true }),
+    interactive: Flags.boolean({ char: 'i', description: "interactive mode", default: false }),
     git: Flags.boolean({ char: 'g', description: 'Initialize a git repository' }),
     npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
-    name: Flags.string({ char: 'n', description: 'Project Name' }),
     framework: Flags.string({ char: 'f', description: 'Framework to use' }),
     version: Flags.string({ char: 'v', description: 'Version of the template' }),
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(CreateSoldevApp);
+    const { args, flags } = await this.parse(CreateSoldevApp);
 
     let projectName: string;
     let frameworkChoice: string;
     let runPackageInstallation: boolean;
     let initGit: boolean;
 
-    const templatePath = path.join( './', 'templates');
+    const templatePath = path.join('./', 'templates');
     const availableFrameworks = this.getTemplates(templatePath);
 
     if (flags.interactive) {
@@ -51,8 +40,8 @@ class CreateSoldevApp extends Command {
       runPackageInstallation = await this.confirmPackageInstallation();
       initGit = flags.git || await this.confirmGitInit();
     } else {
-      if (!flags.name) {
-        this.error('Project name is required in non-interactive mode. Use --name or -n flag.');
+      if (!args.name) {
+        this.error('Project name is required in non-interactive mode.');
       }
       if (!flags.framework) {
         this.error('Framework is required in non-interactive mode. Use --framework or -f flag.');
@@ -159,7 +148,7 @@ class CreateSoldevApp extends Command {
   }
 
   private async runScriptTemplate(scriptPath: string, destPath: string, appName: string): Promise<void> {
-    const fullScriptPath = path.join(path.dirname(__dirname), 'templates', scriptPath);
+    const fullScriptPath = path.join('./templates', scriptPath);
     const spinner = createSpinner(`Running script: ${scriptPath}...`).start();
     try {
       if (!existsSync(fullScriptPath)) {
