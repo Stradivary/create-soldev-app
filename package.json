@@ -2,6 +2,7 @@
   "name": "create-soldev-app",
   "description": "Codebase generator for Telkomsel",
   "version": "0.1.8",
+  "type": "module",
   "author": "Stradivary",
   "bin": "./bin/run.js",
   "bugs": "https://github.com/Stradivary/create-soldev-app/issues",
@@ -13,7 +14,8 @@
     "execa-cjs": "^9.1.1",
     "fs-extra": "^11.2.0",
     "nanospinner": "^1.1.0",
-    "tiged": "^2.12.7"
+    "tiged": "^2.12.7",
+    "tsx": "^4.19.0"
   },
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",
@@ -29,7 +31,6 @@
     "mocha": "^10",
     "oclif": "^4",
     "shx": "^0.3.3",
-    "ts-node": "^10",
     "typescript": "^5"
   },
   "engines": {
@@ -51,11 +52,11 @@
     "bin": "create-soldev-app",
     "dirname": "create-soldev-app",
     "commands": {
-      "strategy": "single",
-      "target": "./dist/index.js"
+      "strategy": "pattern",
+      "target": "./dist/commands"
     },
     "plugins": [
-      "@oclif/plugin-help"
+      "@oclif/plugin-*"
     ]
   },
   "repository": "Stradivary/create-soldev-app",
