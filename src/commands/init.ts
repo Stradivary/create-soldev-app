@@ -14,12 +14,11 @@ class CreateSoldevApp extends Command {
 
   static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
-  static override flags = {
-    force: Flags.boolean({ char: 'f' }),
+  static override flags = { 
     interactive: Flags.boolean({ char: 'i', description: "interactive mode", default: false }),
     git: Flags.boolean({ char: 'g', description: 'Initialize a git repository' }),
     npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
-    framework: Flags.string({ char: 'f', description: 'Framework to use' }),
+    framework: Flags.string({ char: 'f', description: 'Framework to use'}),
     version: Flags.string({ char: 'v', description: 'Version of the template' }),
   };
 
@@ -35,21 +34,21 @@ class CreateSoldevApp extends Command {
     const availableFrameworks = this.getTemplates(templatePath);
 
     if (flags.interactive) {
-      projectName = await this.getProjectName();
-      frameworkChoice = await this.selectFramework(availableFrameworks);
-      runPackageInstallation = await this.confirmPackageInstallation();
+      projectName = args.name || await this.getProjectName();
+      frameworkChoice = flags.framework || await this.selectFramework(availableFrameworks);
+      runPackageInstallation = flags.npm || await this.confirmPackageInstallation();
       initGit = flags.git || await this.confirmGitInit();
     } else {
       if (!args.name) {
         this.error('Project name is required in non-interactive mode.');
       }
-      if (!flags.framework) {
+      if (!(flags.framework )) {
         this.error('Framework is required in non-interactive mode. Use --framework or -f flag.');
       }
-      projectName = flags.name;
+      projectName = args.name;
       frameworkChoice = flags.framework;
-      runPackageInstallation = flags.npm ?? true;
-      initGit = flags.git ?? true;
+      runPackageInstallation = flags.npm ?? false;
+      initGit = flags.git ?? false;
     }
 
     const projectPath = path.join(process.cwd(), projectName);

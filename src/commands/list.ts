@@ -45,7 +45,7 @@ export default class List extends Command {
 
         await select({
             choices: availableFrameworks.map(framework => ({
-                name: `(${framework.version}) - ${framework.name}`,
+                name: `(${framework.version}) ({framework.id}) - ${framework.name}`,
                 value: framework.id,
                 disabled: framework.disabled
             })),
