@@ -17,15 +17,10 @@ Codebase generator for Telkomsel
 <!-- usage -->
 ```sh-session
 $ npm install -g create-soldev-app
-$ create-soldev-app 
-? What is the name of your project? my-new-app
-? What framework do you want to use? Next.js 14
-? Do you want to use TypeScript? Yes
-? Do you want to run package installation? Yes
-Creating a new Soldev app in ./my-new-app
-
+$ create-soldev-app COMMAND
+running command...
 $ create-soldev-app (--version)
-create-soldev-app/0.1.4 linux-x64 node-v20.15.1
+create-soldev-app/0.1.8 linux-x64 node-v20.15.1
 $ create-soldev-app --help [COMMAND]
 USAGE
   $ create-soldev-app COMMAND
