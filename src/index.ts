@@ -1,5 +1,5 @@
 import { confirm, input, select } from '@inquirer/prompts';
-import { Command, Flags } from '@oclif/core';
+import { Args, Command, Flags } from '@oclif/core';
 import { execa } from 'execa-cjs';
 import { createSpinner } from 'nanospinner';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -17,29 +17,51 @@ interface TemplateInfo {
 }
 
 class CreateSoldevApp extends Command {
+  static override args = {
+    directory: Args.string({ default: '.', description: 'directory to create the project in' }),
+  };
+
   static description = 'Create a new Telkomsel Codebase project with Soldev CLI';
   static summary = 'Create a new Telkomsel Codebase project with Soldev CLI';
 
-  static flags = {
-    init: Flags.boolean({
-      char: 'i',
-      description: 'Initialize git repository',
-      default: false,
-    }),
-    remote: Flags.string({
-      char: 'r',
-      description: 'remote repository to add as origin'
-    })
+  static override flags = {
+    force: Flags.boolean({ char: 'f' }),
+    interactive: Flags.boolean({ char: 'i', description: "interactive mode", default: true }),
+    git: Flags.boolean({ char: 'g', description: 'Initialize a git repository' }),
+    npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
+    name: Flags.string({ char: 'n', description: 'Project Name' }),
+    framework: Flags.string({ char: 'f', description: 'Framework to use' }),
+    version: Flags.string({ char: 'v', description: 'Version of the template' }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(CreateSoldevApp);
 
-    const projectName = await this.getProjectName();
+    let projectName: string;
+    let frameworkChoice: string;
+    let runPackageInstallation: boolean;
+    let initGit: boolean;
+
     const templatePath = path.join(path.dirname(__dirname), 'templates');
     const availableFrameworks = this.getTemplates(templatePath);
-    const frameworkChoice = await this.selectFramework(availableFrameworks);
-    const runPackageInstallation = await this.confirmPackageInstallation();
+
+    if (flags.interactive) {
+      projectName = await this.getProjectName();
+      frameworkChoice = await this.selectFramework(availableFrameworks);
+      runPackageInstallation = await this.confirmPackageInstallation();
+      initGit = flags.git || await this.confirmGitInit();
+    } else {
+      if (!flags.name) {
+        this.error('Project name is required in non-interactive mode. Use --name or -n flag.');
+      }
+      if (!flags.framework) {
+        this.error('Framework is required in non-interactive mode. Use --framework or -f flag.');
+      }
+      projectName = flags.name;
+      frameworkChoice = flags.framework;
+      runPackageInstallation = flags.npm ?? true;
+      initGit = flags.git ?? true;
+    }
 
     const projectPath = path.join(process.cwd(), projectName);
     const selectedTemplate = availableFrameworks.find(t => t.id === frameworkChoice);
@@ -56,7 +78,7 @@ class CreateSoldevApp extends Command {
         await this.installPackages(projectPath);
       }
 
-      if (flags.init || await this.confirmGitInit()) {
+      if (initGit) {
         await this.initializeGit(projectPath);
       }
 
@@ -65,6 +87,7 @@ class CreateSoldevApp extends Command {
       this.error(`Failed to create the project: ${error}`);
     }
   }
+
 
   private async getProjectName(): Promise<string> {
     return input({
