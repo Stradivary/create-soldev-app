@@ -12,7 +12,7 @@
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-version": "^2.2.11",
     "core-js": "^3.38.0",
-    "execa-cjs": "^9.1.1",
+    "execa": "^9.3.1",
     "fs-extra": "^11.2.0",
     "nanospinner": "^1.1.0",
     "tiged": "^2.12.7",
