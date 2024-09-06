@@ -22,7 +22,6 @@ class CreateSoldevApp extends Command {
     framework: Flags.string({ char: 'f', description: 'Framework to use (example: nodejs)', options: ['nextjs', 'nextjs@0.2.0'] }),
     interactive: Flags.boolean({ char: 'i', default: false, description: "interactive mode" }),
     npm: Flags.boolean({ char: 'p', description: 'Install dependencies' }),
-    version: Flags.string({ char: 'v', description: 'Version of the template' }),
   };
 
   async run(): Promise<void> {
