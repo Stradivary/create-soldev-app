@@ -20,7 +20,7 @@ $ npm install -g create-soldev-app
 $ create-soldev-app COMMAND
 running command...
 $ create-soldev-app (--version)
-create-soldev-app/0.1.11 linux-x64 node-v20.15.1
+create-soldev-app/0.1.12 linux-x64 node-v20.15.1
 $ create-soldev-app --help [COMMAND]
 USAGE
   $ create-soldev-app COMMAND
@@ -76,7 +76,7 @@ DESCRIPTION
   Create a new Telkomsel Codebase project with Soldev CLI
 ```
 
-_See code: [src/commands/init.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.11/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.12/src/commands/init.ts)_
 
 ## `create-soldev-app list`
 
@@ -93,7 +93,7 @@ EXAMPLES
   $ create-soldev-app list
 ```
 
-_See code: [src/commands/list.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.11/src/commands/list.ts)_
+_See code: [src/commands/list.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.12/src/commands/list.ts)_
 
 ## `create-soldev-app version`
 
