@@ -20,7 +20,7 @@ $ npm install -g create-soldev-app
 $ create-soldev-app COMMAND
 running command...
 $ create-soldev-app (--version)
-create-soldev-app/0.1.12 linux-x64 node-v20.15.1
+create-soldev-app/0.1.13 darwin-arm64 node-v20.14.0
 $ create-soldev-app --help [COMMAND]
 USAGE
   $ create-soldev-app COMMAND
@@ -30,7 +30,7 @@ USAGE
 # Commands
 <!-- commands -->
 * [`create-soldev-app help [COMMAND]`](#create-soldev-app-help-command)
-* [`create-soldev-app init NAME`](#create-soldev-app-init-name)
+* [`create-soldev-app init [NAME]`](#create-soldev-app-init-name)
 * [`create-soldev-app list`](#create-soldev-app-list)
 * [`create-soldev-app version`](#create-soldev-app-version)
 
@@ -54,13 +54,13 @@ DESCRIPTION
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v6.2.8/src/commands/help.ts)_
 
-## `create-soldev-app init NAME`
+## `create-soldev-app init [NAME]`
 
 Create a new Telkomsel Codebase project with Soldev CLI
 
 ```
 USAGE
-  $ create-soldev-app init NAME [-f nextjs|nextjs@0.2.0] [-i] [-p] [-v <value>]
+  $ create-soldev-app init [NAME] [-f nextjs|nextjs@0.2.0] [-i] [-p]
 
 ARGUMENTS
   NAME  Name of the project
@@ -70,13 +70,12 @@ FLAGS
                             <options: nextjs|nextjs@0.2.0>
   -i, --interactive         interactive mode
   -p, --npm                 Install dependencies
-  -v, --version=<value>     Version of the template
 
 DESCRIPTION
   Create a new Telkomsel Codebase project with Soldev CLI
 ```
 
-_See code: [src/commands/init.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.12/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.13/src/commands/init.ts)_
 
 ## `create-soldev-app list`
 
@@ -93,7 +92,7 @@ EXAMPLES
   $ create-soldev-app list
 ```
 
-_See code: [src/commands/list.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.12/src/commands/list.ts)_
+_See code: [src/commands/list.ts](https://github.com/Stradivary/create-soldev-app/blob/v0.1.13/src/commands/list.ts)_
 
 ## `create-soldev-app version`
 
